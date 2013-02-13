@@ -24,11 +24,11 @@ public class DataSet {
 		ArrayList<Tuple> tuples = new ArrayList<Tuple>();
 		//double t = System.currentTimeMillis();
 		DataSet matching = null;
-		/*for(int i = 0; i < 1000; i++) {
+		//for(int i = 0; i < 1000; i++) {
 		for(Tuple tuple : getTuples())
 			if(itemSet.includes(tuple))
-				tuples.add(tuple);*/
-			matching = new DataSet(tuples.toArray(new Tuple[tuples.size()]), getBluePrint());
+				tuples.add(tuple);
+		matching = new DataSet(tuples.toArray(new Tuple[tuples.size()]), getBluePrint());
 		/*}
 		System.out.println(System.currentTimeMillis() - t);*/
 		return matching;

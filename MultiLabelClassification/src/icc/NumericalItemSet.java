@@ -1,7 +1,8 @@
 package icc;
 
 import java.util.Arrays;
-import java.util.BitSet;
+
+import org.apache.lucene.util.OpenBitSet;
 
 import main.Main;
 
@@ -15,7 +16,7 @@ public class NumericalItemSet extends ItemSet {
 		super(itemSet);
 	}
 
-	public NumericalItemSet(BitSet itemSet, int length) {
+	public NumericalItemSet(OpenBitSet itemSet, int length) {
 		super(itemSet, length);
 	}
 	
@@ -90,7 +91,7 @@ public class NumericalItemSet extends ItemSet {
 	}
 
 	@Override
-	public ItemSet getInstance(BitSet bitSet, int length) {
+	public ItemSet getInstance(OpenBitSet bitSet, int length) {
 		return new NumericalItemSet(bitSet, length);
 	}
 

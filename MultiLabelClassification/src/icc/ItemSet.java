@@ -1,5 +1,6 @@
 package icc;
-import java.util.BitSet;
+
+import org.apache.lucene.util.OpenBitSet;
 
 import parsing.Convenience;
 
@@ -10,9 +11,9 @@ public abstract class ItemSet {
 	// **
 	// * Variables and getters / setters
 	// **
-	private final BitSet bitSet;
+	private final OpenBitSet bitSet;
 	
-	public BitSet getBitSet() {
+	public OpenBitSet getBitSet() {
 		return bitSet;
 	}
 	
@@ -35,7 +36,7 @@ public abstract class ItemSet {
 		this(bitSetFromArray(itemSet), itemSet.length);
 	}
 	
-	public ItemSet(BitSet itemSet, int length) {
+	public ItemSet(OpenBitSet itemSet, int length) {
 		this.bitSet = itemSet;
 		this.length = length;
 	}
@@ -44,28 +45,32 @@ public abstract class ItemSet {
 	// * ItemSet methods
 	// **
 	public boolean includes(Tuple tuple) {
-		BitSet copy = (BitSet) this.bitSet.clone();
-		copy.and(tuple.getItemSet().getBitSet());
-		return copy.equals(this.bitSet);
+		OpenBitSet tupleSet = tuple.getItemSet().getBitSet();
+		for(int i = bitSet.nextSetBit(0); i >= 0; i = bitSet.nextSetBit(i+1))
+			if(!tupleSet.get(i))
+				return false;
+		return true;
 	}
 	
 	public ItemSet union(ItemSet other) {
-		BitSet copy = (BitSet) getBitSet().clone();
+		OpenBitSet copy = (OpenBitSet) getBitSet().clone();
 		copy.or(other.getBitSet());
 		return getInstance(copy, getLength());
 	}
 	
-	public static BitSet bitSetFromArray(boolean[] array) {
-		BitSet bitSet = new BitSet(array.length);
+	public static OpenBitSet bitSetFromArray(boolean[] array) {
+		OpenBitSet bitSet = new OpenBitSet(array.length);
 		for(int i = 0; i < array.length; i++)
-			bitSet.set(i, array[i]);
+			if(array[i])
+				bitSet.set(i);
 		return bitSet;
 	}
 	
-	public static BitSet bitSetFromArray(int[] array) {
-		BitSet bitSet = new BitSet(array.length);
+	public static OpenBitSet bitSetFromArray(int[] array) {
+		OpenBitSet bitSet = new OpenBitSet(array.length);
 		for(int i = 0; i < array.length; i++)
-			bitSet.set(i, array[i] > 0);
+			if(array[i] > 0)
+				bitSet.set(i);
 		return bitSet;
 	}
 	
@@ -94,7 +99,7 @@ public abstract class ItemSet {
 	}
 	
 	public abstract double ub();
-	public abstract ItemSet getInstance(BitSet bitSet, int length);
+	public abstract ItemSet getInstance(OpenBitSet bitSet, int length);
 	public abstract ItemSet getInstance(int[] itemSet);
 	
 	public ItemSet getOneItemSet(int j, int itemNumber) {

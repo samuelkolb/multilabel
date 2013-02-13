@@ -2,8 +2,13 @@ package main;
 import icc.DataSet;
 import icc.ItemSet;
 import icc.NumericalItemSet;
+import icc.Tuple;
+
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.apache.lucene.util.OpenBitSet;
 
 import parsing.Parser;
 
@@ -38,6 +43,25 @@ public class Main {
 	 */
 	
 	public static void main(String[] args) {
+				
+		/*
+Profiling original home
+293.0
+2476.0
+15474.0
+56987.0
+132744.0
+319263.0
+
+Original home
+230.0
+2011.0
+11884.0
+45655.0
+101503.0
+167562.0
+210225.0
+		 */
 		/*Tuple[] tuples = new Tuple[]{
 			new Tuple("0 0 1 0 0", "1 3", ' '),
 			new Tuple("1 0 0 1 1", "1 2", ' '),
@@ -47,8 +71,18 @@ public class Main {
 			new Tuple("1 1 0 0 1", "3 2", ' '),
 			new Tuple("0 0 0 1 0", "3 3", ' '),
 			new Tuple("0 1 0 1 1", "2 3", ' ')
+		};*/
+		/*Tuple[] tuples = new Tuple[] {
+			new Tuple(new NumericalItemSet("0 0 1 0 0", ' '), new int[]{1, 3}),
+			new Tuple(new NumericalItemSet("1 0 0 1 1", ' '), new int[]{1, 2}),
+			new Tuple(new NumericalItemSet("0 0 0 1 1", ' '), new int[]{1, 1}),
+			new Tuple(new NumericalItemSet("1 1 0 0 1", ' '), new int[]{2, 1}),
+			new Tuple(new NumericalItemSet("1 1 0 0 1", ' '), new int[]{3, 1}),
+			new Tuple(new NumericalItemSet("1 1 0 0 1", ' '), new int[]{3, 2}),
+			new Tuple(new NumericalItemSet("0 0 0 1 0", ' '), new int[]{3, 3}),
+			new Tuple(new NumericalItemSet("0 1 0 1 1", ' '), new int[]{2, 3})
 		};
-		data = new DataSet(tuples);*/
+		data = new DataSet(tuples, new NumericalItemSet(new int[]{}));*/
 		
 		//data = Parser.parseAttributes("Corel5k-train.arff", 374);
 		data = Parser.parseShortNotation("diabetes.txt", 1, new NumericalItemSet(new int[]{}));
@@ -60,8 +94,8 @@ public class Main {
 		long l = 0;
 		for(int j = 0; j < 10; j++) {
 			double t = System.currentTimeMillis();
-			for(int i = 0; i < 10000; i++)
-				u = data.getBluePrint().getOneItemSet(2, 48).ub();
+			for(int i = 0; i < 100000; i++)
+				u = data.getBluePrint().getOneItemSet(2, 1000).ub();
 			l += (System.currentTimeMillis() - t);
 		}
 		System.out.println(((double)l/10));*/
@@ -101,6 +135,7 @@ public class Main {
 				
 		while(!QVolgende.isEmpty()) {
 			QVolgende = new HashSet<ItemSet>();
+			double t = System.currentTimeMillis();
 			for(ItemSet B : Q1) {
 				for(ItemSet Q : QVorige) {
 					int lastSetBit = 0;
@@ -122,6 +157,7 @@ public class Main {
 				}
 			}
 			QVorige = QVolgende;
+			System.out.println((System.currentTimeMillis()-t));
 		}
 		return bestItemSet;
 	}
@@ -149,7 +185,7 @@ public class Main {
 		
 		double n = data.getTuples().length;
 		for(int i = 0; i < y.length; i++) {
-			double s_i_over_n = s[i]*n;
+			double s_i_over_n = ((double)s[i])/n;
 			double h1 = ((double)y[i]/x) - s_i_over_n;
 			sum1 += h1*h1;
 			double h2 = (((double)s[i]-(double)y[i])/(n - x)) - s_i_over_n;

@@ -1,10 +1,11 @@
 package icc;
 
-import java.util.BitSet;
+import org.apache.lucene.util.OpenBitSet;
+
 
 public class NominalItemSet extends ItemSet {
 
-	public NominalItemSet(BitSet itemSet, int length) {
+	public NominalItemSet(OpenBitSet itemSet, int length) {
 		super(itemSet, length);
 	}
 	
@@ -31,7 +32,7 @@ public class NominalItemSet extends ItemSet {
 	}
 
 	@Override
-	public ItemSet getInstance(BitSet bitSet, int length) {
+	public ItemSet getInstance(OpenBitSet bitSet, int length) {
 		return new NominalItemSet(bitSet, length);
 	}
 
