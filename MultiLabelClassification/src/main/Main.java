@@ -1,10 +1,11 @@
 package main;
+import icc.Data;
 import icc.DataSet;
 import icc.ItemSet;
+import icc.NominalItemSet;
 import icc.NumericalItemSet;
 import icc.Tuple;
 
-import java.util.BitSet;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,9 +16,14 @@ import parsing.Parser;
 
 public class Main {
 	
-	private static DataSet data;
-	public static DataSet getData() {
+	private static Data data;
+	public static Data getData() {
 		return data;
+	}
+
+	private static DataSet dataSet;
+	public static DataSet getDataSet() {
+		return dataSet;
 	}
 
 	private static int[] s;
@@ -40,6 +46,7 @@ public class Main {
 	 * TODO BitVector ipv BitSet
 	 * TODO Score berekenen i.p.v. score
 	 * TODO DataSet matching?
+	 * TODO don't use set?
 	 */
 	
 	public static void main(String[] args) {
@@ -61,6 +68,39 @@ Original home
 101503.0
 167562.0
 210225.0
+
+Include change home
+152.0
+1219.0
+7513.0
+28592.0
+69773.0
+120669.0
+154299.0
+155035.0
+126816.0
+
+Matching/Dataset change home
+95.0
+433.0
+2306.0
+8357.0
+19768.0
+32799.0
+40459.0
+40280.0
+32100.0
+21835.0
+12226.0
+5658.0
+2060.0
+573.0
+122.0
+19.0
+2.0
+0.0
+
+
 		 */
 		/*Tuple[] tuples = new Tuple[]{
 			new Tuple("0 0 1 0 0", "1 3", ' '),
@@ -82,11 +122,15 @@ Original home
 			new Tuple(new NumericalItemSet("0 0 0 1 0", ' '), new int[]{3, 3}),
 			new Tuple(new NumericalItemSet("0 1 0 1 1", ' '), new int[]{2, 3})
 		};
-		data = new DataSet(tuples, new NumericalItemSet(new int[]{}));*/
+		data = new Data(tuples, new NumericalItemSet(new int[]{}));*/
 		
 		//data = Parser.parseAttributes("Corel5k-train.arff", 374);
 		data = Parser.parseShortNotation("diabetes.txt", 1, new NumericalItemSet(new int[]{}));
-		s = data.s();
+		OpenBitSet bitSet = new OpenBitSet(data.getTuples().length);
+		for(int i = 0; i < data.getTuples().length; i++)
+			bitSet.set(i);
+		dataSet = new DataSet(data, bitSet);
+		s = dataSet.y();
 		n = data.getTuples().length;
 		m = data.getTuples()[0].getClassValues().length;
 		
@@ -166,8 +210,8 @@ Original home
 	private static double iccUpdate(ItemSet itemSet, Set<ItemSet> itemSets, double bestItemScore) {
 		if(itemSet.ub() >= bestItemScore) {
 			itemSets.add(itemSet);
-			DataSet covered = data.matching(itemSet);
-			double itemSetValue = var(covered.getTuples().length, covered.y());
+			DataSet covered = dataSet.matching(itemSet);
+			double itemSetValue = var(covered.getNumberOfTuples(), covered.y());
 			if(itemSetValue > bestItemScore) {
 				return itemSetValue;
 			}

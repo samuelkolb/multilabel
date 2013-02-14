@@ -11,7 +11,7 @@ public abstract class ItemSet {
 	// **
 	// * Variables and getters / setters
 	// **
-	private final OpenBitSet bitSet;
+	private OpenBitSet bitSet;
 	
 	public OpenBitSet getBitSet() {
 		return bitSet;
@@ -56,6 +56,10 @@ public abstract class ItemSet {
 		OpenBitSet copy = (OpenBitSet) getBitSet().clone();
 		copy.or(other.getBitSet());
 		return getInstance(copy, getLength());
+	}
+	
+	public void unifyWith(ItemSet other) {
+		bitSet.or(other.bitSet);
 	}
 	
 	public static OpenBitSet bitSetFromArray(boolean[] array) {

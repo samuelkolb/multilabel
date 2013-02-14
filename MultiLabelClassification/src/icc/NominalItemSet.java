@@ -1,5 +1,7 @@
 package icc;
 
+import main.Main;
+
 import org.apache.lucene.util.OpenBitSet;
 
 
@@ -19,14 +21,25 @@ public class NominalItemSet extends ItemSet {
 
 	@Override
 	public double ub() {
-		if("1".equals("1"))
-			throw new UnsupportedOperationException();
-		
-		if(upperbound != -1) 
-			return upperbound; 
-		
-		double u = 0.0;
-		
+		double u = 0;
+		DataSet covered = Main.getDataSet().matching(this);
+		int m = Main.getM();
+		int x_I = covered.getNumberOfTuples();
+		int n = Main.getN();
+		int[] y = covered.y();
+		for(int k = 1; k < x_I; k++) {
+			double sum = 0;
+			for(int i = 0; i < m; i++) {
+				if(k <= x_I - y[i])
+					sum += Math.max(Main.var(k,new int[]{0}), Main.var(k,new int[]{k}));
+				else if(k <= y[i])
+					sum += Math.max(Main.var(k, new int[]{k - x_I + y[i]}), Main.var(k,new int[]{k}));
+				else
+					sum += Math.max(Main.var(k, new int[]{k - x_I + y[i]}), Main.var(k,new int[]{y[i]}));
+			}
+			if(sum > u)
+				u = sum;
+		}		
 		upperbound = u;
 		return u;
 	}

@@ -33,12 +33,12 @@ public class NumericalItemSet extends ItemSet {
 		
 		double u = 0;
 		
-		DataSet covered = Main.getData().matching(this);
+		DataSet covered = Main.getDataSet().matching(this);
 		
 		int m = Main.getM();
 
 		double time3 = System.currentTimeMillis();
-		int[][] sorted_y_i_1 = new int[m][covered.getTuples().length];
+		int[][] sorted_y_i_1 = new int[m][covered.getNumberOfTuples()];
 		for(int i = 0; i < m; i++) {
 			sorted_y_i_1[i] = covered.y_i_1(i);
 			Arrays.sort(sorted_y_i_1[i]);
@@ -46,7 +46,7 @@ public class NumericalItemSet extends ItemSet {
 		if(printing)
 			System.out.println("Building sorted y_i_1 took (ms): "+(System.currentTimeMillis() - time3));
 		
-		int x_I = covered.getTuples().length;
+		int x_I = covered.getNumberOfTuples();
 		int[] min = new int[m]; // OPT
 		int[] max = new int[m]; // OPT
 		

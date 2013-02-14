@@ -1,6 +1,6 @@
 package parsing;
 
-import icc.DataSet;
+import icc.Data;
 import icc.ItemSet;
 import icc.Tuple;
 
@@ -12,7 +12,7 @@ import java.util.ArrayList;
 
 public class Parser {
 	
-	public static DataSet parseAttributes(String filename, int cutoff, ItemSet bluePrint) {
+	public static Data parseAttributes(String filename, int cutoff, ItemSet bluePrint) {
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(filename));
 			String string;
@@ -61,7 +61,7 @@ public class Parser {
 				tuples[i] = new Tuple(bluePrint.getInstance(items), objectiveAttributes);
 			}
 			
-			return new DataSet(tuples, bluePrint);
+			return new Data(tuples, bluePrint);
 			
 		} catch (FileNotFoundException e) {
 			throw new IllegalArgumentException("File not found");
@@ -70,7 +70,7 @@ public class Parser {
 		}
 	}
 	
-	public static DataSet parseShortNotation(String filename, int numberClassValues, ItemSet bluePrint) {
+	public static Data parseShortNotation(String filename, int numberClassValues, ItemSet bluePrint) {
 		BufferedReader reader;
 		try {
 			reader = new BufferedReader(new FileReader(filename));
@@ -99,7 +99,7 @@ public class Parser {
 						classValues[i-values.length+numberClassValues] = values[i];
 				tuples[tupleNumber++] = new Tuple(bluePrint.getInstance(attributes), classValues);
 			}
-			return new DataSet(tuples, bluePrint);
+			return new Data(tuples, bluePrint);
 		} catch (FileNotFoundException e) {
 			throw new IllegalArgumentException("File not found");
 		} catch (IOException e) {
