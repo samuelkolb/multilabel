@@ -21,54 +21,36 @@ public class NumericalItemSet extends ItemSet {
 	}
 	
 	@Override
-	public double ub() {
-		//if(upperbound != -1) 
-		//	return upperbound; 
-		
-		boolean printing = false;
-		
-		double time = System.currentTimeMillis();
-		if(printing)
-			System.out.println();
-		
-		double u = 0;
+	/**
+	 * Calculates the upperbound, if not already calculated using the given scoreCalculator
+	 */
+	public double ub(ScoreCalculator scoreCalculator) {
+		if(upperbound >= 0)
+			return upperbound;
 		
 		DataSet covered = Main.getDataSet().matching(this);
-		
-		int m = Main.getM();
+		int x = covered.getNumberOfTuples();
+		double u = scoreCalculator.getCombinedScore(x, covered.y());
+		int m = Main.getDataSet().getData().getNumberOfClassAttributes();
 
-		double time3 = System.currentTimeMillis();
 		int[][] sorted_y_i_1 = new int[m][covered.getNumberOfTuples()];
 		for(int i = 0; i < m; i++) {
 			sorted_y_i_1[i] = covered.y_i_1(i);
 			Arrays.sort(sorted_y_i_1[i]);
 		}
-		if(printing)
-			System.out.println("Building sorted y_i_1 took (ms): "+(System.currentTimeMillis() - time3));
 		
-		int x_I = covered.getNumberOfTuples();
-		int[] min = new int[m]; // OPT
-		int[] max = new int[m]; // OPT
-		
-		for(int i = 0; i < m; i++)
-			if(x_I > 0)
-				min[i] = sorted_y_i_1[i][0]; // OPT
-		
-		for(int i = 0; i < m; i++)
-			if(x_I > 0)
-				max[i] = sorted_y_i_1[i][sorted_y_i_1[i].length - 1]; // OPT
-		
+		int[] min = new int[m];
+		int[] max = new int[m];
 		int[] opt = new int[m];
 
-		double time5 = System.currentTimeMillis();
 		int s_k_n;
 		int[] s = Main.getS();
 		int n = Main.getN();
-		for(int k = 1; k < x_I; k++) {
-			
+		double v;
+		for(int k = 1; k < x; k++) {
 			for(int i = 0; i < m; i++) {
-				min[i] = min[i] + sorted_y_i_1[i][k-1]; // OPT
-				max[i] = max[i] + sorted_y_i_1[i][x_I-k]; // OPT
+				min[i] = min[i] + sorted_y_i_1[i][k-1];
+				max[i] = max[i] + sorted_y_i_1[i][x-k];
 					
 				s_k_n = s[i]*k/n;
 				if(Math.abs(min[i] - s_k_n) > Math.abs(max[i] - s_k_n))
@@ -76,16 +58,10 @@ public class NumericalItemSet extends ItemSet {
 				else
 					opt[i] = max[i];
 			}
-			double v = Main.var(k, opt);
+			v = scoreCalculator.getCombinedScore(k, opt);
 			if(v > u)
 				u = v;
-		}
-		if(printing)
-			System.out.println("Building v took (ms): "+(System.currentTimeMillis() - time5));
-		
-		if(printing)
-			System.out.println("Calculating u took (ms): "+(System.currentTimeMillis() - time));
-		
+		}		
 		upperbound = u;
 		return u;
 	}

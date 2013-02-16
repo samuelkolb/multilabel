@@ -8,6 +8,12 @@ public class Data {
 	public Tuple[] getTuples() {
 		return tuples;
 	}
+	
+	private final int m;
+	public int getNumberOfClassAttributes() {
+		return m;
+	}
+
 	public Tuple getTuple(int i) {
 		return tuples[i];
 	}
@@ -23,7 +29,10 @@ public class Data {
 	}
 	
 	public Data(Tuple[] tuples, ItemSet bluePrint) {
+		if(tuples.length == 0)
+			throw new IllegalArgumentException("Empty data");
 		this.tuples = tuples;
+		this.m = tuples[0].getClassValues().length;
 		this.bluePrint = bluePrint;
 		int itemNumber = getTuple(0).getItemSet().getLength();
 		OpenBitSet[] matching = new OpenBitSet[itemNumber];
@@ -37,5 +46,16 @@ public class Data {
 			matching[j] = bitSet;
 		}
 		this.matching = matching;
+	}
+	
+	public int getNumberOfTuples() {
+		return getTuples().length;
+	}
+	
+	public DataSet getFullDataSet() {
+		OpenBitSet bitSet = new OpenBitSet(getNumberOfTuples());
+		for(int i = 0; i < getNumberOfTuples(); i++)
+			bitSet.set(i);
+		return new DataSet(this, bitSet);
 	}
 }

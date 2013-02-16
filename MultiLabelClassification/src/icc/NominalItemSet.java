@@ -20,22 +20,33 @@ public class NominalItemSet extends ItemSet {
 	}
 
 	@Override
-	public double ub() {
+	public double ub(ScoreCalculator scoreCalculator) {
+		if(upperbound >= 0)
+			return upperbound;
+		
+		OpenBitSet covered = Main.getDataSet().matchingBitSet(this);
+		int m = Main.getDataSet().getData().getNumberOfClassAttributes();
+		int x_I = (int) DataSet.numberTuples(covered);
+		if(x_I == 0) {
+			upperbound = 0;
+			return upperbound;
+		}
 		double u = 0;
-		DataSet covered = Main.getDataSet().matching(this);
-		int m = Main.getM();
-		int x_I = covered.getNumberOfTuples();
-		int n = Main.getN();
-		int[] y = covered.y();
+		int[] y = DataSet.calculateY(covered, Main.getData());
+
+		// Following roughly paper Zimmermann and Raedt - p.9
+		double y_plus_max, y_plus_min, y_minus_max, y_minus_min;
 		for(int k = 1; k < x_I; k++) {
 			double sum = 0;
 			for(int i = 0; i < m; i++) {
-				if(k <= x_I - y[i])
-					sum += Math.max(Main.var(k,new int[]{0}), Main.var(k,new int[]{k}));
-				else if(k <= y[i])
-					sum += Math.max(Main.var(k, new int[]{k - x_I + y[i]}), Main.var(k,new int[]{k}));
-				else
-					sum += Math.max(Main.var(k, new int[]{k - x_I + y[i]}), Main.var(k,new int[]{y[i]}));
+				y_plus_max = Math.min(k, y[i]);
+				y_plus_min = k - y_plus_max;
+				y_minus_max = Math.min(k, x_I - y[i]);
+				y_minus_min = k - y_minus_max;
+				sum += Math.max(
+					scoreCalculator.getScore(y_plus_max, y_minus_min, i),
+					scoreCalculator.getScore(y_minus_max, y_plus_min, i)
+				);
 			}
 			if(sum > u)
 				u = sum;
@@ -43,7 +54,7 @@ public class NominalItemSet extends ItemSet {
 		upperbound = u;
 		return u;
 	}
-
+		
 	@Override
 	public ItemSet getInstance(OpenBitSet bitSet, int length) {
 		return new NominalItemSet(bitSet, length);

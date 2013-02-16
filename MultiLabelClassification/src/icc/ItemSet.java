@@ -4,8 +4,6 @@ import org.apache.lucene.util.OpenBitSet;
 
 import parsing.Convenience;
 
-
-
 public abstract class ItemSet {
 
 	// **
@@ -83,7 +81,7 @@ public abstract class ItemSet {
 		if(!(obj instanceof ItemSet))
 			return false;
 		ItemSet other = (ItemSet) obj;
-		return getBitSet().equals(other.getBitSet());
+		return getBitSet().equals(other.getBitSet()) && length == other.length;
 	}
 	
 	@Override
@@ -102,7 +100,7 @@ public abstract class ItemSet {
 		return string+"}";
 	}
 	
-	public abstract double ub();
+	public abstract double ub(ScoreCalculator scoreCalculator);
 	public abstract ItemSet getInstance(OpenBitSet bitSet, int length);
 	public abstract ItemSet getInstance(int[] itemSet);
 	
