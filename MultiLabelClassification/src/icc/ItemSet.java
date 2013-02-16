@@ -4,14 +4,12 @@ import org.apache.lucene.util.OpenBitSet;
 
 import parsing.Convenience;
 
-
-
 public abstract class ItemSet {
 
 	// **
 	// * Variables and getters / setters
 	// **
-	private final OpenBitSet bitSet;
+	private OpenBitSet bitSet;
 	
 	public OpenBitSet getBitSet() {
 		return bitSet;
@@ -58,6 +56,10 @@ public abstract class ItemSet {
 		return getInstance(copy, getLength());
 	}
 	
+	public void unifyWith(ItemSet other) {
+		bitSet.or(other.bitSet);
+	}
+	
 	public static OpenBitSet bitSetFromArray(boolean[] array) {
 		OpenBitSet bitSet = new OpenBitSet(array.length);
 		for(int i = 0; i < array.length; i++)
@@ -79,7 +81,7 @@ public abstract class ItemSet {
 		if(!(obj instanceof ItemSet))
 			return false;
 		ItemSet other = (ItemSet) obj;
-		return getBitSet().equals(other.getBitSet());
+		return getBitSet().equals(other.getBitSet()) && length == other.length;
 	}
 	
 	@Override
@@ -98,7 +100,7 @@ public abstract class ItemSet {
 		return string+"}";
 	}
 	
-	public abstract double ub();
+	public abstract double ub(ScoreCalculator scoreCalculator);
 	public abstract ItemSet getInstance(OpenBitSet bitSet, int length);
 	public abstract ItemSet getInstance(int[] itemSet);
 	

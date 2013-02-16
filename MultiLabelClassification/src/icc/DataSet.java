@@ -1,84 +1,115 @@
 package icc;
-import java.util.ArrayList;
+
+import org.apache.lucene.util.OpenBitSet;
 
 
 public class DataSet {
 	
-	private final Tuple[] tuples;
-	public Tuple[] getTuples() {
-		return tuples;
+	private final Data data;
+	public Data getData() {
+		return data;
 	}
 
-	private final ItemSet bluePrint;
-
-	public ItemSet getBluePrint() {
-		return bluePrint;
-	}
-
-	public DataSet(Tuple[] tuples, ItemSet bluePrint) {
-		this.tuples = tuples;
-		this.bluePrint = bluePrint;
+	private final OpenBitSet bitSet;
+	public OpenBitSet getBitSet() {
+		return bitSet;
 	}
 	
+	private final int cardinality;
+	public int getNumberOfTuples() {
+		return cardinality;
+	}
+
+	public DataSet(Data data, OpenBitSet bitSet) {
+		this.data = data;
+		this.bitSet = bitSet;
+		cardinality = (int) bitSet.cardinality();
+	}
+	
+	/**
+	 * Returns a new Dataset, a subset of this dataset that matches the given itemset
+	 */
 	public DataSet matching(ItemSet itemSet) {
-		ArrayList<Tuple> tuples = new ArrayList<Tuple>();
-		//double t = System.currentTimeMillis();
-		DataSet matching = null;
-		//for(int i = 0; i < 1000; i++) {
-		for(Tuple tuple : getTuples())
-			if(itemSet.includes(tuple))
-				tuples.add(tuple);
-		matching = new DataSet(tuples.toArray(new Tuple[tuples.size()]), getBluePrint());
-		/*}
-		System.out.println(System.currentTimeMillis() - t);*/
+		return new DataSet(data, matchingBitSet(itemSet));
+	}
+	
+	/**
+	 * Returns a new bitset, representing a subset of this dataset that matches the given itemset
+	 * For speed gain purposes - avoiding object creation if unnecesary
+	 */
+	public OpenBitSet matchingBitSet(ItemSet itemSet) {
+		OpenBitSet matching = bitSet.clone();
+		for(int i = itemSet.getBitSet().nextSetBit(0); i >= 0; i = itemSet.getBitSet().nextSetBit(i + 1))
+			matching.and(getData().getMatching(i));
 		return matching;
 	}
 	
 	public int[] y_i_1(int i) {
-		int[] array = new int[tuples.length];
-		for(int j = 0; j < array.length; j++)
-			array[j] = getTuples()[j].getClassValues()[i];
+		int[] array = new int[getNumberOfTuples()];
+		int j = 0;
+		for(int k = bitSet.nextSetBit(0); k >= 0; k = bitSet.nextSetBit(k + 1))
+			array[j++] = data.getTuple(k).getClassValues()[i];
 		return array;
 	}
 	
 	public int y(int i) {
 		int sum = 0;
-		for(int j = 0; j < getTuples().length; j++)
-			sum += getTuples()[j].getClassValues()[i];
+		for(int k = bitSet.nextSetBit(0); k >= 0; k = bitSet.nextSetBit(k + 1))
+			sum += data.getTuple(k).getClassValues()[i];
 		return sum;
 	}
 	
 	public int[] y() {
+		return calculateY(bitSet, getData());
+	}
+	
 
-		if(getTuples().length < 1)
-			return new int[]{};
-		int m = getTuples()[0].getClassValues().length;
-		int[] y = new int[m];
-		for(int i = 0; i < m; i++)
-			y[i] = y(i);
+	/**
+	 * Method for calculating y
+	 * Speed critical
+	 * @param dataBitSet
+	 * 			A bitset representing a subset of all tuples
+	 * @param data
+	 * 			A data object holding all the tuples
+	 * @param m
+	 * 			The number of the class attributes
+	 * @return
+	 * 			An array with the sums over all represented tuples for each class attribute
+	 */
+	public static int[] calculateY(OpenBitSet dataBitSet, Data data) {
+		int[] y = new int[data.getNumberOfClassAttributes()];
+		int sum;
+		// Iterate over all class attributes
+		for(int i = 0; i < data.getNumberOfClassAttributes(); i++) {
+			sum = 0;
+			for(int k = dataBitSet.nextSetBit(0); k >= 0; k = dataBitSet.nextSetBit(k + 1))
+				sum += data.getTuple(k).getClassValues()[i];
+			y[i] = sum;
+		}
 		return y;
-	}
-	
-	public int s(int i) {
-		int sum = 0;
-		for(Tuple tuple : getTuples())
-			sum += tuple.getClassValues()[i];
-		return sum;
-	}
-	
-	public int[] s() {
-		int m = getTuples()[0].getClassValues().length;
-		int[] s = new int[m];
-		for(int i = 0; i < m; i++)
-			s[i] = s(i);
-		return s;
 	}
 	
 	@Override
 	public String toString() {
 		StringBuilder stringBuilder = new StringBuilder();
-		for(Tuple tuple : getTuples())
-			stringBuilder.append(tuple.toString()+"\n");
+		for(int i = bitSet.nextSetBit(0); i >= 0; i = bitSet.nextSetBit(i + 1))
+			stringBuilder.append(data.getTuple(i).toString()+"\n");
 		return stringBuilder.toString();
+	}
+	
+	public static int numberTuples(OpenBitSet dataBitSet) {
+		return (int) dataBitSet.cardinality();
+	}
+	
+	public DataSet other(DataSet data){
+		return new DataSet(data.getData(), negate(data.getBitSet()));
+	}
+	
+	public OpenBitSet negate(OpenBitSet bitSet){
+		OpenBitSet negation = bitSet.clone();
+		for(int i = 0; i < bitSet.capacity(); i++){
+			negation.fastFlip(i);
+		}
+		return negation;
 	}
 }

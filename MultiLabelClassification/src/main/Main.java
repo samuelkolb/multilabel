@@ -1,11 +1,23 @@
 package main;
+import icc.CategoryUtility;
+import icc.Data;
 import icc.DataSet;
 import icc.ItemSet;
+import icc.NominalItemSet;
 import icc.NumericalItemSet;
+import icc.ScoreCalculator;
 import icc.Tuple;
+import icc.Variance;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Set;
 
 import org.apache.lucene.util.OpenBitSet;
@@ -15,9 +27,14 @@ import parsing.Parser;
 
 public class Main {
 	
-	private static DataSet data;
-	public static DataSet getData() {
+	private static Data data;
+	public static Data getData() {
 		return data;
+	}
+
+	private static DataSet dataSet;
+	public static DataSet getDataSet() {
+		return dataSet;
 	}
 
 	private static int[] s;
@@ -30,48 +47,13 @@ public class Main {
 		return n;
 	}
 
-	private static int m;
-	public static int getM() {
-		return m;
+	private static ScoreCalculator scoreCalculator;
+	public static ScoreCalculator getScoreCalculator() {
+		return scoreCalculator;
 	}
-
-	/**
-	 * TODO Vermijden dubbel berekenen u en var => miss omschrijven classes
-	 * TODO BitVector ipv BitSet
-	 * TODO Score berekenen i.p.v. score
-	 * TODO DataSet matching?
-	 */
 	
 	public static void main(String[] args) {
-				
-		/*
-Profiling original home
-293.0
-2476.0
-15474.0
-56987.0
-132744.0
-319263.0
-
-Original home
-230.0
-2011.0
-11884.0
-45655.0
-101503.0
-167562.0
-210225.0
-		 */
-		/*Tuple[] tuples = new Tuple[]{
-			new Tuple("0 0 1 0 0", "1 3", ' '),
-			new Tuple("1 0 0 1 1", "1 2", ' '),
-			new Tuple("0 0 0 1 1", "1 1", ' '),
-			new Tuple("1 1 0 0 1", "2 1", ' '),
-			new Tuple("1 1 0 0 1", "3 1", ' '),
-			new Tuple("1 1 0 0 1", "3 2", ' '),
-			new Tuple("0 0 0 1 0", "3 3", ' '),
-			new Tuple("0 1 0 1 1", "2 3", ' ')
-		};*/
+		// Sese and morichita example dataset
 		/*Tuple[] tuples = new Tuple[] {
 			new Tuple(new NumericalItemSet("0 0 1 0 0", ' '), new int[]{1, 3}),
 			new Tuple(new NumericalItemSet("1 0 0 1 1", ' '), new int[]{1, 2}),
@@ -82,143 +64,98 @@ Original home
 			new Tuple(new NumericalItemSet("0 0 0 1 0", ' '), new int[]{3, 3}),
 			new Tuple(new NumericalItemSet("0 1 0 1 1", ' '), new int[]{2, 3})
 		};
-		data = new DataSet(tuples, new NumericalItemSet(new int[]{}));*/
+		data = new Data(tuples, new NumericalItemSet(new int[]{}));//*/
 		
-		//data = Parser.parseAttributes("Corel5k-train.arff", 374);
-		data = Parser.parseShortNotation("diabetes.txt", 1, new NumericalItemSet(new int[]{}));
-		s = data.s();
+		// Bigger dataset
+		//data = Parser.parseAttributes("Corel5k-train.arff", 374, new NominalItemSet(new int[]{}));
+		
+		// Diabetes dataset
+		// Found: {0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0}
+		data = Parser.parseShortNotation("diabetes.txt", 1, new NominalItemSet(new int[]{}));
+		
+		// Init dataset as including all tuples data
+		OpenBitSet bitSet = new OpenBitSet(data.getTuples().length);
+		for(int i = 0; i < data.getTuples().length; i++)
+			bitSet.set(i);
+		dataSet = new DataSet(data, bitSet);
+		s = dataSet.y();
 		n = data.getTuples().length;
-		m = data.getTuples()[0].getClassValues().length;
-		
-		/*double u = 0;
-		long l = 0;
-		for(int j = 0; j < 10; j++) {
-			double t = System.currentTimeMillis();
-			for(int i = 0; i < 100000; i++)
-				u = data.getBluePrint().getOneItemSet(2, 1000).ub();
-			l += (System.currentTimeMillis() - t);
-		}
-		System.out.println(((double)l/10));*/
-	
+		scoreCalculator = new CategoryUtility(n, s);
+		//scoreCalculator = new Variance(n, s);
 		
 		System.out.println("Data loaded, "+data.getTuples().length+" tuples, "+
 				data.getTuples()[0].getItemSet().getLength()+" items, "+
 				data.getTuples()[0].getClassValues().length+" class values");
-				
+			
 		StopWatch.tic("Full time");
-		System.out.println(icc());
+		ItemSet bestItemSet = icc();
+		System.out.println(bestItemSet);
+		System.out.println("#Covered: "+getDataSet().matching(bestItemSet).getNumberOfTuples());
 		StopWatch.printToc("Full time");
 	}
 	
-	private static ItemSet icc() {
+	public static ItemSet icc() {
 		ItemSet bestItemSet = null;
 		int itemNumber = data.getTuples()[0].getItemSet().getLength();
 		double bestItemScore = 0.0;
-		Set<ItemSet> Q1 = new HashSet<ItemSet>();
-		Set<ItemSet> B1 = new HashSet<ItemSet>(Q1);
-		System.out.println("ICC init, with "+itemNumber+" items");
+		List<ItemSet> oneItemSets = new ArrayList<ItemSet>();
 		for(int j = 0; j < itemNumber; j++) {
 			ItemSet itemSet = getData().getBluePrint().getOneItemSet(j, itemNumber);
-			double newScore = iccUpdate(itemSet, Q1, bestItemScore);
+			double newScore = iccUpdate(itemSet, oneItemSets, bestItemScore);
 			if(newScore != bestItemScore) {
 				bestItemSet = itemSet;
 				bestItemScore = newScore;
 			}
-		}
-		
-		System.out.println("ICC init finished");
-		
-		Set<ItemSet> QVorige = new HashSet<ItemSet>();
-		QVorige.addAll(Q1);
+		}		
+		List<ItemSet> QVorige = new ArrayList<ItemSet>(oneItemSets);
 
-		Set<ItemSet> QVolgende = QVorige;
-				
+		List<ItemSet> QVolgende = QVorige;
+		List<ItemSet> oneItemSetsNext;
+
+		ItemSet itemSet;
 		while(!QVolgende.isEmpty()) {
-			QVolgende = new HashSet<ItemSet>();
+			QVolgende = new ArrayList<ItemSet>();
+			oneItemSetsNext = new ArrayList<ItemSet>();
 			double t = System.currentTimeMillis();
-			for(ItemSet B : Q1) {
+			for(ItemSet B : oneItemSets) {
 				for(ItemSet Q : QVorige) {
 					int lastSetBit = 0;
 					for(int i = Q.getBitSet().nextSetBit(0); i >= 0; i = Q.getBitSet().nextSetBit(i+1))
 						lastSetBit = i;
-
-					if(lastSetBit < B.getBitSet().nextSetBit(0) && Q.ub() >= bestItemScore) {
-						if(B.ub() < bestItemScore)
-							B1.remove(B);
-						else {
-							ItemSet itemSet = Q.union(B);
-							double newScore = iccUpdate(itemSet, QVolgende, bestItemScore);
-							if(newScore != bestItemScore) {
-								bestItemSet = itemSet;
-								bestItemScore = newScore;
-							}
+					
+					if(lastSetBit < B.getBitSet().nextSetBit(0) && Q.ub(getScoreCalculator()) > bestItemScore) {
+						itemSet = Q.union(B);
+						double newScore = iccUpdate(itemSet, QVolgende, bestItemScore);
+						if(newScore != bestItemScore) {
+							bestItemSet = itemSet;
+							bestItemScore = newScore;
 						}
 					}
 				}
+				if(B.ub(getScoreCalculator()) > bestItemScore)
+					oneItemSetsNext.add(B);
 			}
+			oneItemSets = oneItemSetsNext;
 			QVorige = QVolgende;
-			System.out.println((System.currentTimeMillis()-t));
+			double timeTaken = System.currentTimeMillis()-t;
+			System.out.println("Iteration took: "+timeTaken+"ms");
 		}
 		return bestItemSet;
 	}
 	
-	
-	private static double iccUpdate(ItemSet itemSet, Set<ItemSet> itemSets, double bestItemScore) {
-		if(itemSet.ub() >= bestItemScore) {
+	private static double iccUpdate(ItemSet itemSet, Collection<ItemSet> itemSets, double bestItemScore) {
+		double ub = itemSet.ub(getScoreCalculator());
+		if(ub >= bestItemScore) {
 			itemSets.add(itemSet);
-			DataSet covered = data.matching(itemSet);
-			double itemSetValue = var(covered.getTuples().length, covered.y());
+			OpenBitSet dataBitSet = dataSet.matchingBitSet(itemSet);
+			double itemSetValue = getScoreCalculator().getCombinedScore(DataSet.numberTuples(dataBitSet),
+				DataSet.calculateY(dataBitSet, getData()));
+			if(DataSet.numberTuples(dataBitSet) == 0)
+				System.out.println("added");
 			if(itemSetValue > bestItemScore) {
 				return itemSetValue;
 			}
 		}
 		return bestItemScore;
 	}
-	
-	
-	public static double var(double x, int[] y) {
-		if(x == n || x == 0)
-			return 0.0;
-
-		double sum1 = 0.0;
-		double sum2 = 0.0;
-		
-		double n = data.getTuples().length;
-		for(int i = 0; i < y.length; i++) {
-			double s_i_over_n = ((double)s[i])/n;
-			double h1 = ((double)y[i]/x) - s_i_over_n;
-			sum1 += h1*h1;
-			double h2 = (((double)s[i]-(double)y[i])/(n - x)) - s_i_over_n;
-			sum2 += h2*h2;
-		}
-				
-		return x*sum1 + (n-x)*sum2;
-	}
 }
-
-/*
- * Data loaded, 768 tuples, 48 items, 1 class values
-ICC init, with 48 items
-ICC init finished
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-Next k
-{0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0}
-Runtime in ms: 434816.0
-
- * */
