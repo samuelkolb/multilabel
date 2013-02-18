@@ -18,7 +18,7 @@ public class Node {
 		this.test = test;
 		this.data = data;
 		this.parent = parent;
-		children = null;
+		children = new ArrayList<Node>();
 	}
 	
 	public ItemSet getTest(){
