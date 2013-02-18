@@ -105,6 +105,7 @@ public class DataSet {
 		return new DataSet(data.getData(), negate(data.getBitSet()));
 	}
 	
+	// aanpassen naar minus
 	public OpenBitSet negate(OpenBitSet bitSet){
 		OpenBitSet negation = bitSet.clone();
 		for(int i = 0; i < bitSet.capacity(); i++){
