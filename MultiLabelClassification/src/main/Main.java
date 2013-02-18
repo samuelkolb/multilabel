@@ -24,6 +24,7 @@ import org.apache.lucene.util.OpenBitSet;
 
 import parsing.Parser;
 
+// TODO test trees
 
 public class Main {
 	
